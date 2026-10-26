@@ -348,7 +348,7 @@ const SIZE_OPTS = [
   // nm: 알림에 쓰는 짧은 이름 / on: 켜기 체크박스(출력 옵션 키, 꺼지면 칸 비활성) / hint: 칸 아래 안내
   { g: '크기 제한', k: 'cutMaxH', label: '컷씬 최대 높이', hint: '컷씬의 높이를 수정합니다: 화면 높이 기준 · 0 = 제한 없음', def: 80, unit: '%', min: 0, max: 100, step: 1 },
   { g: '크기 제한', k: 'logMaxW', label: '최대 폭', nm: '로그 최대 폭', def: 900, unit: 'px', min: 300, max: 2560, step: 10,
-    on: ['wideLim', '넓은 화면에서 로그 폭 제한하기 <span class="muted">(형식 B 전용)</span>'], hint: '범위: 300~2560 · 추천값: 800~1000<br>화면이 설정 값보다 좁은 경우엔 영향 X' }];
+    on: ['wideLim', '넓은 화면에서 로그 폭 제한하기 <span class="muted">(형식 B 전용)</span>'], hint: '범위: 300~2560 · 추천값: 800~1000 · 화면이 설정 값보다 좁은 경우엔 영향 X' }];
 const SIZE_MAP = new Map(SIZE_OPTS.map(r => [r.k, r]));
 // 숫자 옵션 범위 맞추기 (입력 처리·설정 불러오기 공통). 숫자가 아니면 기본값
 const clampOpt = (r, v) => (!Number.isFinite(v) ? r.def : Math.min(r.max, Math.max(r.min, v)));
