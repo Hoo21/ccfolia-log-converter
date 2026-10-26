@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>코코포리아 로그 변환기</title>
+<link rel="icon" href="favicon.png" type="image/png">
 <style>
 :root{--bg:#16171a;--panel:#1f2024;--line:#2e3036;--text:#e4e4e7;--sub:#9a9ca5;--accent:#01ddf4;--warn:#f0b429}
 *{box-sizing:border-box}
@@ -25,8 +26,9 @@ h1{font-size:20px;margin:0}
 .sub{color:var(--sub);font-size:13px;margin:2px 0 0}
 section{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
 h2{font-size:15px;margin:0 0 12px}
-button{background:#2b2d33;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;font-size:13px}
-button:hover{border-color:#4a4d55}
+button,.btn{background:#2b2d33;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;font-size:13px}
+button:hover,.btn:hover{border-color:#4a4d55}
+.btn{display:inline-block;text-decoration:none}   /* 버튼 모양 링크 (설명서) */
 button.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
 button.sm{padding:2px 8px;font-size:12px}
 input[type=text],input[type=number],select{background:#121316;border:1px solid var(--line);color:var(--text);border-radius:4px;padding:4px 6px;font:inherit;font-size:13px}
@@ -127,11 +129,12 @@ h3.dh{font-size:13px;margin:16px 0 4px}
 <main>
   <header>
     <div>
-      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.6.4</span></h1>
+      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.6.5</span></h1>
       <p class="sub">※ 모든 처리는 브라우저 안에서만 이루어집니다.</p>
     </div>
     <nav class="quick"><button data-go="pOpts" disabled>출력 설정</button><button data-go="result" disabled>결과 미리보기</button></nav>
     <div class="row">
+      <a class="btn" href="https://h104.notion.site/ddd-40599ee8f51380069e22ca14582d0eae" target="_blank" rel="noopener" title="상세 설명서 (새 창)">설명서 ↗</a>
       <button id="exportBtn">설정 내보내기 (JSON)</button>
       <button id="importBtn">설정 불러오기</button>
       <input type="file" id="importFile" accept=".json" class="hidden">
