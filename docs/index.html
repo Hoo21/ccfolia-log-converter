@@ -139,7 +139,7 @@ h3.dh{font-size:13px;margin:16px 0 4px}
 <main>
   <header>
     <div>
-      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.6.6</span></h1>
+      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.1</span></h1>
       <p class="sub">※ 모든 처리는 브라우저 안에서만 이루어집니다.</p>
     </div>
     <nav class="quick"><button data-go="pOpts" disabled>출력 설정</button><button data-go="result" disabled>결과 미리보기</button></nav>
@@ -195,6 +195,8 @@ h3.dh{font-size:13px;margin:16px 0 4px}
         <label><input type="checkbox" data-o="hideEmpty"> 이미지 주소가 없는 캐릭터는 이미지 칸을 출력하지 않기</label>
         <label><input type="checkbox" data-o="embed"> 외부 이미지를 파일 안에 넣기 <span class="muted">(원본 이미지가 지워져도 보이지만 파일이 커집니다)</span></label>
         <div class="muted" id="embedStatus"></div>
+        <label><input type="checkbox" data-o="logAv"> 새 형식 로그의 초상화를 캐릭터 이미지로 자동 등록 <span class="muted">(캐릭터 이미지에 자동으로 들어갑니다. 화질 상태: 저.)</span></label>
+        <div class="row" id="avStatus"></div>
         <button class="sm rst">프로필 이미지 기본값으로</button>
       </fieldset>
       <fieldset><legend>묶기</legend>
@@ -368,7 +370,7 @@ const toHex = v => { const m = /^#?([0-9a-f]{6})$/i.exec(String(v).trim()); retu
 // 원본 로그에서 시스템 메시지를 찾는 이름 (코코포리아 고정값은 system)
 const SYS_NAME = 'system';
 const isSys = name => name === SYS_NAME;
-const DEF_OPTS = { fmt: 'B', prof: true, hideEmpty: false, embed: false, mCard: false, mTalk: false, mSys: true, arrow: true, cardGap: false, sysBadge: 'System', cutLazy: true, cutGap: true, wrapTalk: true, wrapEtc: true, wideLim: true,
+const DEF_OPTS = { fmt: 'B', prof: true, hideEmpty: false, embed: false, mCard: false, mTalk: false, mSys: true, arrow: true, cardGap: false, sysBadge: 'System', cutLazy: true, cutGap: true, wrapTalk: true, wrapEtc: true, wideLim: true, logAv: false,
   ...Object.fromEntries([...SIZE_OPTS, ...COLOR_OPTS].map(r => [r.k, r.def])) };
 const LOCK = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z'/%3E%3C/svg%3E\")";
 const BASE_CSS = `.ccbk{--bg:#1e1f21;--tx:#dadada;--dv:rgba(255,255,255,.08);background:var(--bg);color:var(--tx);font:14px/1.6 sans-serif;padding:20px 6%;word-break:keep-all;overflow-wrap:break-word}
@@ -465,13 +467,16 @@ function shieldCss(css) {
 
 // ───────── 판정 결과 ─────────
 // 판정 결과 기준: 문구 전체가 일치해야 하며 영어는 대소문자 무관 (critical / CRITICAL / Critical)
+// v1.7.0: 일본어 표기 추가
 const DICE = [
-  [/^(대성공|critical)$/i, 'cr'],
-  [/^(극단적 성공|대단한 성공|extreme success|extreme)$/i, 'ex'],
-  [/^(어려운 성공|hard success|hard)$/i, 'hd'],
-  [/^(보통 성공|성공|regular success|regular)$/i, 'ok'],
-  [/^(실패|failure|fail)$/i, 'ng'],
-  [/^(대실패|fumble)$/i, 'fb']];
+  [/^(대성공|critical|クリティカル)$/i, 'cr'],
+  [/^(극단적 성공|대단한 성공|extreme success|extreme|イクストリーム成功)$/i, 'ex'],
+  [/^(어려운 성공|hard success|hard|ハード成功)$/i, 'hd'],
+  [/^(보통 성공|성공|regular success|regular|レギュラー成功|成功)$/i, 'ok'],
+  [/^(실패|failure|fail|失敗)$/i, 'ng'],
+  [/^(대실패|fumble|ファンブル)$/i, 'fb']];
+// 새 형식 판정 결과 클래스 → 판정 색 (결과 표기가 표에 없을 때만 사용)
+const ROLL_CLS = { critical: 'cr', success: 'ok', failure: 'ng', fumble: 'fb' };
 
 // ───────── 상태 ─────────
 const newSettings = () => ({ v: 1, o: { ...DEF_OPTS }, css: null, chars: {}, alias: {}, color: {}, ignore: [], exp: {}, hide: {}, cardOff: {}, tabMode: {}, noArrow: [], lock: {}, tabArrow: {}, allInc: {}, srcBase: {}, cuts: [], ranges: [], cutAt: [] });
@@ -522,7 +527,7 @@ function loadSettings(obj) {
     c.role = typeof c.role === 'string' ? c.role : 'talk'; c.link = typeof c.link === 'string' ? c.link : '';
     c.folders = Array.isArray(c.folders) && c.folders.length ? c.folders.map(String) : ['폴더 1'];
     const F = c.folders.length;
-    c.imgs = Array.isArray(c.imgs) ? c.imgs.filter(i => i && typeof i === 'object').map(i => ({ l: String(i.l ?? ''), src: String(i.src ?? ''), data: String(i.data ?? ''), a: +i.a || 0, z: +i.z || 100, x: Number.isFinite(+i.x) ? +i.x : 50, y: Number.isFinite(+i.y) ? +i.y : 0, f: Math.min(F - 1, Math.max(0, int(i.f))) })) : [];
+    c.imgs = Array.isArray(c.imgs) ? c.imgs.filter(i => i && typeof i === 'object').map(i => ({ l: String(i.l ?? ''), src: String(i.src ?? ''), data: String(i.data ?? ''), a: +i.a || 0, z: +i.z || 100, x: Number.isFinite(+i.x) ? +i.x : 50, y: Number.isFinite(+i.y) ? +i.y : 0, f: Math.min(F - 1, Math.max(0, int(i.f))), ...(typeof i.av === 'string' && i.av ? { av: i.av } : {}) })) : [];
     if (c.byColor && typeof c.byColor === 'object' && !Array.isArray(c.byColor)) c.byColor = Object.fromEntries(Object.entries(c.byColor).filter(([, v]) => typeof v === 'string'));
     else delete c.byColor;
   }
@@ -561,10 +566,16 @@ function toParas(html) {
   }
   return out;
 }
+// v1.7.0: 코코포리아 로그 형식 두 가지. 파일 안에 article.message가 있으면 새 형식(코코포리아 v1.37.0 업데이트), 없으면 기존 형식
+//  두 형식 모두 같은 메시지 자료 { name, color, paras, seq (+ 새 형식: av 초상화 식별값, rc 판정 결과 클래스) }를 만듦
 function parseFile(text, fileName) {
   const doc = new DOMParser().parseFromString(text, 'text/html');
   const fm = /^(.*?)\[([^\]]+)\]/.exec(fileName);
   const base = (fm ? fm[1] : fileName.replace(/\.html?$/i, '')).trim() || 'log';
+  return { base, byTab: doc.querySelector('article.message') ? parseNew(doc, fm) : parseOld(doc, fm) };
+}
+// 기존 형식: <p style="color"><span>[탭]</span><span>이름</span><span>내용</span></p>
+function parseOld(doc, fm) {
   const byTab = new Map();
   let seq = 0;   // 파일 안 전체 순서 (전체 로그에서 탭 사이 순서를 맞추는 데 사용)
   for (const p of doc.body.getElementsByTagName('p')) {
@@ -575,15 +586,67 @@ function parseFile(text, fileName) {
     if (!byTab.has(tab)) byTab.set(tab, []);
     byTab.get(tab).push({ name: s[1].textContent.replace(/\s+/g, ' ').trim(), color: m ? m[1].trim().toLowerCase() : '#dddddd', paras: toParas(s[2].innerHTML), seq: seq++ });
   }
-  return { base, byTab };
+  return byTab;
+}
+// 새 형식: <article class="message[ system]" data-channel> 안에 초상화(avatar-image-N)·이름(.speaker)·내용(.message-text)·판정(.roll-result)
+//  탭: data-channel이 main/other/info면 그대로, 직접 만든 탭(무작위 ID)은 표시 이름(.channel-name 또는 파일 이름의 [ ])
+//  판정: 명령과 결과를 한 줄로 합쳐 기존 형식과 같은 모양. 예) ("1d100<=70 (1D100<=70) ＞ 8 ＞ 成功")
+//  초상화: 문서 CSS의 그림 데이터를 식별값으로 바꿔 메시지에는 식별값만 (그림은 avPool에 한 번만)
+const BASE_CH = new Set(['main', 'other', 'info']);
+function parseNew(doc, fm) {
+  const byTab = new Map(), avOf = new Map();
+  for (const st of doc.querySelectorAll('style'))
+    for (const [, n, u] of st.textContent.matchAll(/\.avatar-image-(\d+)\s*\{\s*background-image:\s*url\(["']?(data:image\/[^"')]+)["']?\)/g)) {
+      const h = avHash(u); avOf.set(n, h); if (!avPool.has(h)) avPool.set(h, u);
+    }
+  const label = fm ? fm[2].trim() : (/\[([^\]]+)\]\s*$/.exec(doc.title) || [])[1];
+  let seq = 0;
+  // 직접 만든 탭: 채널 ID마다 이름 하나. 다른 채널과 이름이 같거나 main/other/info와 같으면 "이름 (2)"처럼 구분
+  const chName = new Map(), used = new Set(BASE_CH);
+  const tabOf = (ch, cn) => {
+    if (BASE_CH.has(ch)) return ch;
+    if (!chName.has(ch)) {
+      const nm = (cn ? cn.textContent.trim().replace(/^\[|\]$/g, '').trim() : label) || ch;
+      let t = nm, k = 2; while (used.has(t)) t = `${nm} (${k++})`;
+      used.add(t); chName.set(ch, t);
+    }
+    return chName.get(ch);
+  };
+  for (const a of doc.querySelectorAll('article.message')) {
+    const ch = a.dataset.channel || 'main', tab = tabOf(ch, a.querySelector('.channel-name'));
+    const sys = a.classList.contains('system'), sp = a.querySelector('.speaker'), roll = a.querySelector('.roll-result');
+    const m = sp && /--speaker-color\s*:\s*([^;"]+)/i.exec(sp.getAttribute('style') || '');
+    let t = (a.querySelector('.message-text')?.textContent || '').replace(/\s+$/, '');
+    if (roll) t = (t ? t + ' ' : '') + roll.textContent.trim();
+    const av = a.querySelector('[class*="avatar-image-"]'), an = av && /avatar-image-(\d+)/.exec(av.className);
+    const r = { name: sys ? SYS_NAME : (sp ? sp.textContent.replace(/\s+/g, ' ').trim() : ''), color: m ? m[1].trim().toLowerCase() : '#888888', paras: toParas(esc(t)), seq: seq++ };
+    if (an && avOf.has(an[1])) r.av = avOf.get(an[1]);
+    if (roll) { const c = /\b(critical|success|failure|fumble)\b/.exec(roll.className); if (c) r.rc = c[1]; }
+    if (!byTab.has(tab)) byTab.set(tab, []);
+    byTab.get(tab).push(r);
+  }
+  return byTab;
+}
+// 초상화 식별값: 그림 데이터 문자열의 FNV-1a 해시 (같은 그림 = 같은 값, 다른 로그·세션에서도 동일)
+function avHash(u) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < u.length; i++) { h ^= u.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36) + u.length.toString(36);
+}
+const avPool = new Map();   // 식별값 → 로그 초상화 그림 데이터 (메모리에만, 저장하지 않음)
+// 불러온 로그에서 더 이상 쓰지 않는 그림 정리 (파일 삭제·전체 로그 교체 후)
+function pruneAvPool() {
+  const live = new Set();
+  for (const T of tabs.values()) for (const r of T.raw) if (r.av) live.add(r.av);
+  for (const h of avPool.keys()) if (!live.has(h)) avPool.delete(h);
 }
 
 // ───────── 2. 분류 (설정 바뀔 때마다 파싱 결과 재사용) ─────────
 function canon(name) { let n = name, k = 0; while (S.alias[n] && k++ < 10) n = S.alias[n]; return n; }
 function derive() {
-  colorIdx = null;
+  colorIdx = null; avIdxCache = null;
   for (const T of tabs.values())
-    T.items = T.raw.map((r, i) => { const name = canon(r.name); return { i, tab: T.tab, seq: r.seq, name, color: S.color[name] || r.color, paras: r.paras, empty: !r.paras.length }; });
+    T.items = T.raw.map((r, i) => { const name = canon(r.name); return { i, tab: T.tab, seq: r.seq, name, color: S.color[name] || r.color, paras: r.paras, empty: !r.paras.length, av: r.av, rc: r.rc }; });
 }
 const modeOf = tab => S.tabMode[tab] || (tab === 'main' || tab === 'other' ? 'log' : 'card');
 // 전체 결과 포함 여부: other만 기본 제외
@@ -636,13 +699,32 @@ function pickOf(e, R) {
   const ps = roleOf(e.name) === 'pseudo', x = S.exp[e.tab + ':' + e.i];
   if (Array.isArray(x) ? ps : x != null && !ps) return ps ? { o: x[0], k: x[1], by: 'msg' } : { o: e.name, k: x, by: 'msg' };
   for (const r of (R && R.get(e.tab + '\n' + e.name)) || []) if (e.i >= r.from && e.i <= r.end) return { o: ps ? r.link : e.name, k: r.img, by: 'range' };
+  if (e.av && S.o.logAv) {   // 로그 초상화: 그 대사에 붙어 있던 초상화를 등록된 캐릭터에서 찾음 (말한 캐릭터 쪽 우선)
+    const list = avIndex().get(e.av);
+    const own = ownerOf(e.name), cand = list && !(own && ownImg(own)) && list.filter(y => !ownImg(S.chars[y.o]));   // 말한 캐릭터에 주소·PC 이미지가 있으면 쓰지 않음
+    if (cand && cand.length) { const x = cand.find(y => S.chars[y.o] === own) || cand[0]; return { o: x.o, k: x.k, by: 'av' }; }
+  }
   return ps ? { o: colorLink(e.name, e.color), k: -1, by: 'color' } : { o: e.name, k: -1, by: 'def' };
 }
 // 결정된 표정 → { c: 이미지 주인 설정, k, img }. 이미지가 없으면 null
+//  로그 초상화(av)는 출력 옵션 logAv가 꺼져 있으면 없는 이미지로 봄 → 꺼짐이면 출력에 영향 없음
+// v1.7.1: 주소·PC 이미지가 있는 캐릭터(ownImg)는 로그 초상화를 쓰지 않음 (가벼운 주소 이미지 우선)
+const ownImg = c => c.imgs.some(i => i.av === undefined && hasImg(i));
+const usable = (i, c) => !!i && !(i.av && (!S.o.logAv || ownImg(c)));
 function imgOfPick(p) {
   const c = p.o && ownerOf(p.o); if (!c || !c.imgs.length) return null;
-  const k = c.imgs[p.k] ? p.k : defIdx(c);
+  const ok = i => usable(i, c);
+  let k = ok(c.imgs[p.k]) ? p.k : defIdx(c);
+  if (!ok(c.imgs[k])) { k = c.imgs.findIndex(i => ok(i) && !i.f); if (k < 0) k = c.imgs.findIndex(ok); if (k < 0) return null; }
   return { c, k, img: c.imgs[k] };
+}
+// 로그 초상화 색인: 식별값 → [{ o: 캐릭터 이름, k: 표정 번호 }]. 설정이 바뀌면(update) 다시 만듦
+let avIdxCache = null;
+function avIndex() {
+  if (avIdxCache) return avIdxCache;
+  avIdxCache = new Map();
+  for (const [o, c] of Object.entries(S.chars)) c.imgs.forEach((img, k) => { if (img.av) (avIdxCache.get(img.av) || avIdxCache.set(img.av, []).get(img.av)).push({ o, k }); });
+  return avIdxCache;
 }
 const imgSrc = img => (img.data && (S.o.embed || !img.src)) ? img.data : img.src;
 function diceCls(p) {
@@ -700,6 +782,7 @@ function renderLog(items, limit = 0, preview = false) {
       continue;
     }
     const dc = e.paras.map(diceCls);                          // 판정 문구 검사는 문단마다 한 번
+    if (e.rc && !dc.some(Boolean)) dc[dc.length - 1] = ROLL_CLS[e.rc];   // 새 형식: 표에 없는 결과 표기는 결과 클래스로
     if (dc.some(Boolean)) {                                   // 주사위 판정
       flush();
       out.push(`<div class="r"${di([e.i], e.tab)}><b>${esc(e.name)} - 판정</b>${e.paras.map((p, j) => `<p${dc[j] ? ` class="${dc[j]}"` : ''}>${p}</p>`).join('')}</div>`);
@@ -946,6 +1029,17 @@ function computeChecks() {
     }
     if (n) list.push({ lv: 'w', text: `넣은 컷씬 ${n}개가 출력되지 않습니다. (컷씬 주소가 없거나, 넣은 메시지가 나레이션이 아님)`, loc });
   }
+  { // 새 형식 판정 중 결과 표기가 판정 결과 표에 없는 것 (결과 클래스로 색만 정함)
+    const unk = new Map();
+    for (const T of tabs.values()) for (const e of T.items) if (e.rc && !e.empty && !e.paras.some(diceCls)) {
+      const p = e.paras[e.paras.length - 1], k = p.lastIndexOf('＞'), t = k < 0 ? '' : p.slice(k + 1).replace(/<[^>]+>/g, '').trim();
+      if (t) unk.set(t, (unk.get(t) || 0) + 1);
+    }
+    const idle = Object.entries(S.chars).filter(([, c]) => ownImg(c) && c.imgs.some(i => i.av));
+    if (idle.length) list.push({ lv: 'n', text: `주소·PC 이미지가 있어 로그 초상화를 쓰지 않는 캐릭터 ${idle.length}명: ${idle.map(([n, c]) => `${n}(${c.imgs.filter(i => i.av).length}장)`).join(', ')}`,
+      acts: [{ t: '이 캐릭터들의 로그 초상화 지우기', a: 'avdrop', names: idle.map(([n]) => n) }] });
+    if (unk.size) list.push({ lv: 'n', text: `판정 결과 표에 없는 표기: ${[...unk].map(([t, n]) => `"${t}" ${n}개`).join(', ')} (코코포리아 결과 종류로 색을 정했습니다)` });
+  }
   if (saveFailed) list.push({ lv: 'w', text: '브라우저 저장 공간(약 5 MB)이 부족해 설정이 자동 저장되지 않고 있습니다. 설정을 내보내 백업한 뒤, 캐릭터 탭의 "안 쓰는 캐릭터 정리"로 용량을 줄여 주세요.',
     acts: [{ t: '설정 내보내기', a: 'export' }] });
   if (S.o.prof) {
@@ -976,6 +1070,7 @@ $('checks').onclick = e => {
   const a = c.acts[b.dataset.j];
   if (a.a === 'export') return $('exportBtn').click();
   if (a.a === 'open') return openImg(a.name);
+  if (a.a === 'avdrop') { const n = dropAv(a.names); toast(`로그 초상화 ${n}장을 지웠습니다`); return update({ chars: true }); }
   if (a.a === 'ignore') S.ignore.push(a.key);
   else if (a.a === 'hide') (S.hide[a.tab] ||= []).push(a.name);
   else if (a.a === 'color') S.color[a.name] = a.c;
@@ -1281,7 +1376,7 @@ function renderMenu() {
   const sel = P.mode === 'msg' && c && P.cur.o === P.own ? (c.imgs[P.cur.k] ? P.cur.k : defIdx(c)) : -1;
   let h = P.mode === 'range'
     ? `<div class="mh">구간 [${esc(P.tab)}] ${rangeText(P.from, P.to)} · ${P.ps ? '연동 캐릭터와 ' : ''}표정을 고르세요</div>`
-    : `<div class="mh">${esc(P.name)} · [${esc(P.tab)}] #${P.is[0] + 1} · ${{ msg: '이 대사에 직접 지정됨', range: '구간 적용 중', color: '색별 연동', def: '기본' }[P.cur.by]}</div>`;
+    : `<div class="mh">${esc(P.name)} · [${esc(P.tab)}] #${P.is[0] + 1} · ${{ msg: '이 대사에 직접 지정됨', range: '구간 적용 중', av: '로그 초상화', color: '색별 연동', def: '기본' }[P.cur.by]}</div>`;
   if (P.ps) h += `<select id="mLink" title="연동 캐릭터">${linkOpts(P.color, P.own)}</select>`;
   h += c && c.imgs.length ? expList(c, sel) : `<div class="mh">${P.own ? '연동 캐릭터에 이미지가 없습니다' : '연동 캐릭터를 고르세요'}</div>`;
   if (P.mode === 'range') h += '<button data-m="back" class="act">← 뒤로</button>';
@@ -1364,7 +1459,7 @@ function renderImgs(c) {
   const F = fold(c), d = defIdx(c);
   const irow = (img, n) => `<div class="irow${n === adjIdx ? ' sel' : ''}" data-k="${n}"><span class="thumb" style="${esc(bgStyle(img))}"></span>` +
     `<input type="text" class="lbl" value="${esc(img.l || '')}" placeholder="${n === d ? '기본' : '표정 이름'}">` +
-    `<input type="text" class="url" value="${esc(img.src || '')}" placeholder="${img.data && !img.src ? '(내 PC 이미지 파일 사용 중)' : '이미지 주소 (URL)'}">` +
+    `<input type="text" class="url" value="${esc(img.src || '')}" placeholder="${img.av ? '(로그 초상화)' : img.data && !img.src ? '(내 PC 이미지 파일 사용 중)' : '이미지 주소 (URL)'}">` +
     (F.length > 1 ? `<select class="fsel" title="폴더 옮기기">${F.map((fn, fi) => `<option value="${fi}"${fi === (img.f || 0) ? ' selected' : ''}>${esc(fn)}</option>`).join('')}</select>` : '') +
     `<button class="sm" data-act="file">PC 파일</button><button class="sm" data-act="adj">위치·크기 조정</button><button class="sm" data-act="del">삭제</button></div>`;
   const sh = shut(), cnt = F.map(() => 0);
@@ -1614,7 +1709,7 @@ function syncOpts() {
   renderCuts();
   for (const el of document.querySelectorAll('[data-o]')) el.type === 'checkbox' ? (el.checked = !!S.o[el.dataset.o]) : (el.value = S.o[el.dataset.o]);
   for (const el of document.querySelectorAll('input[name=fmt]')) el.checked = el.value === S.o.fmt;
-  syncOn();
+  syncOn(); renderAvStatus();
   $('css').value = S.css ?? BASE_CSS;
 }
 // 출력 옵션 처리. 같은 data-o 체크박스·입력 칸이 여러 곳에 있으면 서로 맞춤
@@ -1637,6 +1732,7 @@ function onOpt(e) {
   } else S.o[k] = e.target.value.trim();
   if (k === 'embed') syncEmbed();
   if (k === 'wideLim') syncOn();
+  if (k === 'logAv') S.o.logAv ? importAvatars() : renderAvStatus();
   update({ chars: k === 'prof', checks: k === 'hideEmpty' });
 }
 $('pOpts').addEventListener('input', onOpt);
@@ -1715,10 +1811,91 @@ function autoNarr() {
   const top = [...cnt].sort((a, b) => b[1] - a[1])[0];
   if (top) cfgOf(top[0]).role = 'narr';
 }
+// ───────── 로그 초상화 자동 등록 (v1.7.0, 출력 옵션 logAv, 기본 꺼짐) ─────────
+// 이미지가 없는 캐릭터(또는 로그 초상화만 있는 캐릭터)에 그 캐릭터가 쓴 초상화를 "로그 초상화" 폴더로 등록. 같은 그림은 한 번만
+// 가명: 같은 색 캐릭터 중 같은 초상화를 자기 대사에서 쓴 캐릭터의 폴더로 (없으면 등록하지 않고 색별 연동 규칙을 따름)
+// 80×80 PNG → WebP(0.85)로 다시 저장
+const AV_FOLDER = '로그 초상화';
+function avUsage() {   // 이름 → Map(식별값 → 그 초상화로 말한 색들), 일반 캐릭터 이름 → 말한 색들
+  const use = new Map(), cols = new Map();
+  for (const T of tabs.values()) for (const e of T.items) {
+    if (e.empty || isSys(e.name)) continue;
+    if (roleOf(e.name) === 'talk') (cols.get(e.name) || cols.set(e.name, new Set()).get(e.name)).add(e.color);
+    if (!e.av) continue;
+    const m = use.get(e.name) || use.set(e.name, new Map()).get(e.name);
+    (m.get(e.av) || m.set(e.av, new Set()).get(e.av)).add(e.color);
+  }
+  return { use, cols };
+}
+function avTargets() {   // [등록할 캐릭터 이름, 식별값]
+  const { use, cols } = avUsage(), out = [];
+  const home = n => (S.chars[n]?.link && S.chars[S.chars[n].link] ? S.chars[n].link : n);   // 이미지 연결이 있으면 연결된 캐릭터
+  const empty = n => !(ownerOf(n)?.imgs || []).some(i => hasImg(i) && !i.av);            // 주소·PC 이미지가 없는 캐릭터만
+  for (const [n, m] of use) {
+    const r = roleOf(n);
+    if (r === 'talk') { if (empty(n)) for (const h of m.keys()) out.push([home(n), h]); continue; }
+    if (r !== 'pseudo') continue;
+    for (const [h, cs] of m) {   // 가명: 같은 색으로 말하고 같은 초상화를 쓴 일반 캐릭터
+      const x = [...use.keys()].find(y => roleOf(y) === 'talk' && use.get(y).has(h) && [...cs].some(c => cols.get(y)?.has(c)));
+      if (x && empty(x)) out.push([home(x), h]);
+    }
+  }
+  return out;
+}
+async function avToWebp(u) {
+  const bm = await createImageBitmap(await (await fetch(u)).blob());
+  const cv = Object.assign(document.createElement('canvas'), { width: bm.width, height: bm.height });
+  cv.getContext('2d').drawImage(bm, 0, 0);
+  return cv.toDataURL('image/webp', 0.85);
+}
+let avRun = 0;
+async function importAvatars() {
+  const run = ++avRun, todo = avTargets().filter(([n, h]) => avPool.has(h) && !(S.chars[n]?.imgs || []).some(i => i.av === h));
+  if (!todo.length) return renderAvStatus();
+  $('avStatus').textContent = `로그 초상화 ${todo.length}장을 등록하는 중…`;
+  const conv = new Map();
+  for (const h of new Set(todo.map(([, h]) => h))) { try { conv.set(h, await avToWebp(avPool.get(h))); } catch { /* 읽지 못한 그림은 건너뜀 */ } if (run !== avRun) return; }
+  if (!S.o.logAv) return renderAvStatus();
+  for (const [n, h] of todo) {
+    const c = cfgOf(n), d = conv.get(h); if (!d || c.imgs.some(i => i.av === h)) continue;
+    for (let k = c.imgs.length - 1; k >= 0; k--) if (!hasImg(c.imgs[k])) { c.imgs.splice(k, 1); dropImgRef(c, k); }   // 비어 있는 기본 줄 정리 (대사별 표정·구간 번호도 맞춤)
+    const F = fold(c); let fi = F.indexOf(AV_FOLDER);
+    if (fi < 0 && F.length === 1 && !c.imgs.length) F[(fi = 0)] = AV_FOLDER;   // 이미지가 하나도 없으면 기본 폴더 이름을 바꿔서 사용
+    else if (fi < 0) { fi = F.length; F.push(AV_FOLDER); }
+    const no = c.imgs.filter(i => i.av).length + 1;
+    c.imgs.push({ l: '초상화 ' + no, src: '', data: d, a: 1, z: 100, x: 50, y: 0, f: fi, av: h });
+  }
+  update({ chars: true });
+}
+// 옵션 옆 안내: 이 로그의 초상화 수 / 등록된 초상화 수·크기 / 꺼져 있을 때 등록된 초상화 삭제
+function renderAvStatus() {
+  const box = $('avStatus'), inLog = new Set(), reg = allImgs().filter(i => i.av);
+  for (const T of tabs.values()) for (const e of T.items) if (e.av) inLog.add(e.av);
+  const size = reg.reduce((n, i) => n + i.data.length, 0);
+  box.innerHTML = `<span class="muted">${inLog.size ? `이 로그의 초상화 ${inLog.size}장${S.o.logAv ? '' : ` (켜면 출력 최대 약 +${inLog.size * 4} KB)`}. ` : ''}${reg.length ? `등록된 로그 초상화 ${reg.length}장(약 ${kb(size)})${S.o.logAv ? '' : ' · 꺼져 있어 출력에 쓰지 않음'}` : ''}</span>` +
+    (reg.length && !S.o.logAv ? '<button class="sm" id="avClear">등록된 로그 초상화 삭제</button>' : '');
+}
+// 로그 초상화 지우기 (names가 없으면 전체). 비게 된 "로그 초상화" 폴더도 정리하고 대사별 표정·구간 번호를 맞춤
+function dropAv(names) {
+  let n = 0;
+  for (const [nm, c] of Object.entries(S.chars)) {
+    if (names && !names.includes(nm)) continue;
+    for (let k = c.imgs.length - 1; k >= 0; k--) if (c.imgs[k].av) { c.imgs.splice(k, 1); dropImgRef(c, k); n++; }
+    const F = fold(c), fi = F.indexOf(AV_FOLDER);
+    if (fi >= 0 && F.length > 1 && !c.imgs.some(i => (i.f || 0) === fi)) { F.splice(fi, 1); for (const i of c.imgs) if (i.f > fi) i.f--; }
+    else if (fi === 0) F[0] = '폴더 1';   // 기본 폴더로 쓰던 "로그 초상화" 이름 되돌리기
+  }
+  return n;
+}
+$('pOpts').addEventListener('click', e => {
+  if (e.target.id !== 'avClear') return;
+  toast(`로그 초상화 ${dropAv()}장을 삭제했습니다`); update({ chars: true, checks: true });
+});
 // 설정 적용 (불러오기·초기화·되돌리기 공통): 설정(S)만 바꾸고 불러온 로그·파일 이름은 유지. 화면 상태(폴더 접힘·필터·구간 시작)는 비움
 function applySettings(obj) {
   embedRun++; loadSettings(obj); shutMap.clear(); pvName = ''; cleanUndo = null; setRangeStart(null); derive(); autoNarr();
   $('embedStatus').textContent = ''; syncOpts(); update({ chars: true, now: true });
+  if (S.o.logAv) importAvatars();   // v1.7.1: 켜진 설정을 불러와도 바로 등록
 }
 // 설정 메뉴: 바깥 클릭·Esc로 닫힘. 닫히면 초기화 확인 상태도 취소
 const setMenu = $('setMenu'), resetBtn = $('resetBtn');
@@ -1802,7 +1979,7 @@ function renderChips() {
 $('fileChips').onclick = e => {
   const k = e.target.dataset.rm; if (k == null) return;
   removeTabs(k === '*' ? [...tabs.keys()] : k === ALL ? allTabs() : [k]);
-  loadNotes = []; cleanUndo = null;
+  pruneAvPool(); loadNotes = []; cleanUndo = null;
   renderChips();
   if (!tabs.size) { curTab = null; $('setup').classList.add('hidden'); $('result').classList.add('hidden'); setQuick(false); saveLocal(); return; }
   update({ chars: true, now: true });
@@ -1827,6 +2004,8 @@ async function loadFiles(list, toAll) {
   if (!tabs.size) return;
   derive();
   autoNarr();
+  pruneAvPool();
+  if (S.o.logAv) importAvatars(); else renderAvStatus();
   curTab = gotAll ? ALL : tabs.has('main') ? 'main' : first ?? curTab;
   cleanUndo = null; renderChips();
   $('setup').classList.remove('hidden'); $('result').classList.remove('hidden'); setQuick(true);
@@ -1849,7 +2028,7 @@ function update({ chars = false, checks = false, now = false } = {}) {
   clearTimeout(timer);
   const run = () => {
     derive();
-    if (needChars) { renderChars(); renderCuts(); needChars = false; }   // 컷씬 탭의 배치 수도 로그 기준
+    if (needChars) { renderChars(); renderCuts(); renderAvStatus(); needChars = false; }   // 컷씬 탭의 배치 수도 로그 기준
     renderTabbar(); renderView();
     if (needChecks) { renderChecks(); needChecks = false; }
     saveLocal();
