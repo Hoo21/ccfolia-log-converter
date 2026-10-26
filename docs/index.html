@@ -139,7 +139,7 @@ h3.dh{font-size:13px;margin:16px 0 4px}
 <main>
   <header>
     <div>
-      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.1</span></h1>
+      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.2</span></h1>
       <p class="sub">※ 모든 처리는 브라우저 안에서만 이루어집니다.</p>
     </div>
     <nav class="quick"><button data-go="pOpts" disabled>출력 설정</button><button data-go="result" disabled>결과 미리보기</button></nav>
@@ -200,13 +200,13 @@ h3.dh{font-size:13px;margin:16px 0 4px}
         <button class="sm rst">프로필 이미지 기본값으로</button>
       </fieldset>
       <fieldset><legend>묶기</legend>
-        <label><input type="checkbox" data-o="mCard"> 정보 카드: 연속된 같은 이름 메시지를 카드 하나로 묶기 <span class="muted">(info·은닉 탭)</span></label>
+        <label><input type="checkbox" data-o="mCard"> 정보 카드: 연속된 같은 이름 메시지를 카드 하나로 묶기 <span class="muted">(info·사용자 탭)</span></label>
         <label><input type="checkbox" data-o="mTalk"> 대사: 연속된 같은 캐릭터 대사를 블록 하나로 묶기 <span class="muted">(main·other 탭, 표정이 바뀌면 나뉨)</span></label>
         <label><input type="checkbox" data-o="mSys"> 시스템: 연속된 시스템 메시지를 블록 하나로 묶기</label>
         <button class="sm rst">묶기 기본값으로</button>
       </fieldset>
       <fieldset><legend>기타</legend>
-        <label><input type="checkbox" data-o="arrow"> info 탭 카드 배지 앞에 ▶ 붙이기 <span class="muted">(은닉 탭 등 다른 카드 탭은 결과의 각 탭에서 설정)</span></label>
+        <label><input type="checkbox" data-o="arrow"> info 탭 카드 배지 앞에 ▶ 붙이기 <span class="muted">(사용자 탭 등 다른 카드 탭은 결과의 각 탭에서 설정)</span></label>
         <label><input type="checkbox" data-o="cardGap"> 카드 (정보 박스) 위아래 배경 여백 <span class="muted">(추천값: off. 전체 카드 설정에 반영됩니다)</span></label>
         <label><input type="checkbox" data-o="wrapTalk"> 캐릭터 대사: 단어 단위 줄바꿈 <span class="muted">(off시: 구분 없이 줄바꿈)</span></label>
         <label><input type="checkbox" data-o="wrapEtc"> 나레이션·시스템·판정·정보 카드: 단어 단위 줄바꿈</label>
@@ -394,7 +394,7 @@ const BASE_CSS = `.ccbk{--bg:#1e1f21;--tx:#dadada;--dv:rgba(255,255,255,.08);bac
 .ccbk .r p{font-weight:700;font-size:13px}
 /* cr 대성공 · ex 극단적 성공 · hd 어려운 성공 · ok 보통 성공 · ng 실패 · fb 대실패 */
 .ccbk .cr{color:#ffd700}.ccbk .ex{color:#ffa500}.ccbk .hd{color:#1e90ff}.ccbk .ok{color:#32cd32}.ccbk .ng{color:#ff604e}.ccbk .fb{color:#d03030}
-/* 정보 카드 (s = 은닉) */
+/* 정보 카드 (s = 자물쇠) */
 .ccbk .i{margin:8px 0;padding:16px 20px;background:#252628}
 .ccbk .i b{display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;padding:4px 10px;border-radius:6px;background:#3b3d45;color:var(--c,#00def5);font-size:13px}
 .ccbk .i p{color:#8e8e8e;font-size:14px}
@@ -479,7 +479,7 @@ const DICE = [
 const ROLL_CLS = { critical: 'cr', success: 'ok', failure: 'ng', fumble: 'fb' };
 
 // ───────── 상태 ─────────
-const newSettings = () => ({ v: 1, o: { ...DEF_OPTS }, css: null, chars: {}, alias: {}, color: {}, ignore: [], exp: {}, hide: {}, cardOff: {}, tabMode: {}, noArrow: [], lock: {}, tabArrow: {}, allInc: {}, srcBase: {}, cuts: [], ranges: [], cutAt: [] });
+const newSettings = () => ({ v: 2, o: { ...DEF_OPTS }, css: null, chars: {}, alias: {}, color: {}, ignore: [], exp: {}, hide: {}, cardOff: {}, tabMode: {}, noArrow: [], lock: {}, tabArrow: {}, allInc: {}, srcBase: {}, cuts: [], ranges: [], cutAt: [] });
 let S = newSettings();
 const tabs = new Map();   // tab → { tab, base, fname, raw:[{name,color,paras}], items:[] }
 let curTab = null, previewAll = false, embedRun = 0;
@@ -503,11 +503,13 @@ const saveLocal = () => { clearTimeout(saveT); saveT = setTimeout(saveNow, 800);
 addEventListener('pagehide', saveNow);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 const int = (v, d = 0) => (v !== '' && v != null && Number.isInteger(+v) ? +v : d);
+let wideMigrated = false;   
 function loadSettings(obj) {
-  const n = newSettings();
+  const n = newSettings(); wideMigrated = false;
   if (obj && typeof obj === 'object') { Object.assign(n, obj); n.o = { ...DEF_OPTS, ...(obj.o || {}) }; delete n.o.sys; delete n.o.cutPad;
-    // v1.6.5 이전 설정: 로그 최대 폭 0 = 제한 없음 → 체크 OFF + 폭 기본값 / 숫자 → 체크 ON + 그 폭
-    if (obj.o && !('wideLim' in obj.o)) { const w = +obj.o.logMaxW || 0; n.o.wideLim = w > 0; n.o.logMaxW = w > 0 ? w : DEF_OPTS.logMaxW; } }   
+    if (obj.o && !(obj.v >= 2)) { const w = +obj.o.logMaxW || 0; if (!('wideLim' in obj.o)) n.o.logMaxW = w > 0 ? w : DEF_OPTS.logMaxW;
+      if (!n.o.wideLim) { n.o.wideLim = true; wideMigrated = true; } } }
+  n.v = 2;
   // 불러온 값 검사: 잘못된 값이 출력 CSS에 들어가지 않도록 기본값으로 되돌림
   for (const r of COLOR_OPTS) n.o[r.k] = toHex(n.o[r.k]) || r.def;
   for (const r of SIZE_OPTS) n.o[r.k] = clampOpt(r, +n.o[r.k]);
@@ -543,6 +545,8 @@ function loadSettings(obj) {
   S = n;
 }
 try { const t = localStorage.getItem(LS_KEY); if (t) loadSettings(JSON.parse(t)); } catch { /* 무시 */ }
+const WIDE_NOTE = '넓은 화면 로그 폭 제한이 기본 켬으로 바뀌어 켜 두었습니다 (출력 옵션에서 끌 수 있음)';
+if (wideMigrated) { saveLocal(); setTimeout(() => toast(WIDE_NOTE), 300); }
 
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), Math.min(2600, 1600 + msg.length * 25)); }   // 글자 수에 따라 1.6~2.6초
 async function copyText(s) {
@@ -1018,8 +1022,13 @@ function computeChecks() {
     const key = `col:${name}`;
     if (s.colors.size < 2 || ig.has(key) || roleOf(name) === 'pseudo') continue;   // 가명은 색이 여러 개인 것이 정상으로
     const sorted = [...s.colors].sort((p, q) => q[1] - p[1]);
-    list.push({ lv: 'w', text: `"${name}"이(가) ${s.colors.size}가지 색으로 나옵니다: ${sorted.map(([c, n]) => `<span class="sw" style="background:${esc(c)}"></span>${esc(c)} (${n})`).join(', ')}`, html: true, loc: s.loc,
-      acts: [{ t: '가장 많이 쓴 색으로 통일', a: 'color', name, c: sorted[0][0] }, { t: '무시', a: 'ignore', key }] });
+    // v1.7.2: 로그 탭 이름이면 가명 제안. "???"처럼 물음표뿐이거나 다른 캐릭터와 같은 색을 쓰면 가명 버튼을 앞에 둠
+    const ps = s.log && (/^[?？!！.…・\s]+$/.test(name) || sorted.some(([c]) => sameColor(c).some(([n]) => n !== name)));
+    const acts = [{ t: '가장 많이 쓴 색으로 통일', a: 'color', name, c: sorted[0][0] }];
+    if (s.log) acts[ps ? 'unshift' : 'push']({ t: '가명으로 바꾸기', a: 'pseudo', name });
+    list.push({ lv: 'w', text: `"${esc(name)}"이(가) ${s.colors.size}가지 색으로 나옵니다: ${sorted.map(([c, n]) => `<span class="sw" style="background:${esc(c)}"></span>${esc(c)} (${n})`).join(', ')}` +
+      (ps ? '<br><span class="muted">여러 캐릭터가 함께 쓴 이름(??? 연출 등)이면 색을 통일하지 말고 가명으로 바꾸세요.</span>' : ''), html: true, loc: s.loc,
+      acts: [...acts, { t: '무시', a: 'ignore', key }] });
   }
   { // 넣은 컷씬 중 출력되지 않는 것: 주소 없음 / 나레이션이 아닌 메시지(역할 변경 등)
     const ok = new Set(validCuts().map(c => c.id)); let n = 0, loc = null;
@@ -1071,6 +1080,7 @@ $('checks').onclick = e => {
   if (a.a === 'export') return $('exportBtn').click();
   if (a.a === 'open') return openImg(a.name);
   if (a.a === 'avdrop') { const n = dropAv(a.names); toast(`로그 초상화 ${n}장을 지웠습니다`); return update({ chars: true }); }
+  if (a.a === 'pseudo') { cfgOf(a.name).role = 'pseudo'; update({ chars: true }); toast(`"${a.name}"을(를) 가명으로 바꿨습니다. 색마다 연동 캐릭터를 확인하세요`); return openImg(a.name); }
   if (a.a === 'ignore') S.ignore.push(a.key);
   else if (a.a === 'hide') (S.hide[a.tab] ||= []).push(a.name);
   else if (a.a === 'color') S.color[a.name] = a.c;
@@ -1920,7 +1930,7 @@ resetBtn.onclick = () => {
 $('undoBtn').onclick = () => { const bak = resetBak; openSetMenu(false); setUndo(null); applySettings(bak); toast('초기화 직전 설정으로 되돌렸습니다'); };
 $('importFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
-  try { applySettings(JSON.parse((await f.text()).replace(/^\ufeff/, ''))); setUndo(null); toast('설정을 불러왔습니다'); }
+  try { applySettings(JSON.parse((await f.text()).replace(/^\ufeff/, ''))); setUndo(null); toast(wideMigrated ? '설정을 불러왔습니다. ' + WIDE_NOTE : '설정을 불러왔습니다'); }
   catch { toast('설정 파일을 읽지 못했습니다'); }
   e.target.value = '';
 };
