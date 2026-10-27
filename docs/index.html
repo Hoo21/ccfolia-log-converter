@@ -139,7 +139,7 @@ h3.dh{font-size:13px;margin:16px 0 4px}
 <main>
   <header>
     <div>
-      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.2</span></h1>
+      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.3</span></h1>
       <p class="sub">※ 모든 처리는 브라우저 안에서만 이루어집니다.</p>
     </div>
     <nav class="quick"><button data-go="pOpts" disabled>출력 설정</button><button data-go="result" disabled>결과 미리보기</button></nav>
@@ -405,6 +405,7 @@ const BASE_CSS = `.ccbk{--bg:#1e1f21;--tx:#dadada;--dv:rgba(255,255,255,.08);bac
 const RESET_CSS = `/* 스킨 영향 차단 */
 .ccbk,.ccbk :where(div,p,b){margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;box-sizing:content-box;position:static;float:none;width:auto;height:auto;min-width:0;min-height:0;max-width:none;max-height:none;letter-spacing:normal;word-spacing:normal;text-indent:0;text-transform:none;text-decoration:none;text-shadow:none;white-space:normal;vertical-align:baseline;opacity:1;transform:none}
 .ccbk{display:block;text-align:left;font-weight:400;font-style:normal}
+.ccbk>:is(div,p){content-visibility:auto;contain-intrinsic-size:auto 60px}
 .ccbk :where(div,p){display:block;color:inherit;font:inherit;text-align:inherit;word-break:inherit;overflow-wrap:inherit}
 .ccbk :where(b){display:inline;color:inherit;font-family:inherit;font-size:inherit;font-style:inherit;line-height:inherit;font-weight:700}`;
 // 미리보기·출력 공통 디자인. 출력 옵션에 따른 덮어쓰기 규칙: 기본 디자인 뒤
@@ -896,12 +897,14 @@ function outOf(key) {
 const tgtOf = key => (key === ALL ? allInfo : tabs.get(key));   // 파일 이름(fname)을 가진 객체
 // 출력 파일에서는 한 줄 전체가 주석인 구역 제목(/* 대사 */ 등)을 지움. 캐릭터 이름·표정 이름 주석(줄 끝)은 남김
 const stripCmt = css => css.replace(/^[ \t]*\/\*[^\n]*?\*\/[ \t]*(?:\n|$)/gm, '');
-function docHtml(key) {
+// v1.7.3: frag = true → 형식과 관계없이 블로그용 코드만 ([코드 복사]). B 문서 틀 스타일은 <style>body{…}가 아니라 body 속성
+//  → 문서 전체를 블로그에 붙여도 편집기가 body 태그를 지우므로 블로그 페이지(폭·배경)에 영향 없음
+function docHtml(key, fragOnly = false) {
   const O = outOf(key), { css, body } = renderLog(O.items);
   // 형식 A·B 공통. B는 해당 내용 문서 틀로 감싼 것.
   const frag = `<style>\n${shieldCss(stripCmt(css))}\n</style>\n${WRAP_OPEN}\n${body}\n</div>\n`;
-  if (S.o.fmt === 'A') return frag;
-  return `<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>${esc(O.base)} [${esc(O.label)}]</title>\n<style>body{margin:0${S.o.wideLim ? ` auto;max-width:${S.o.logMaxW}px` : ''};background:${S.o.bgLog}}</style>\n</head>\n<body>\n${frag}</body>\n</html>\n`;
+  if (fragOnly || S.o.fmt === 'A') return frag;
+  return `<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>${esc(O.base)} [${esc(O.label)}]</title>\n</head>\n<body style="margin:0${S.o.wideLim ? ` auto;max-width:${S.o.logMaxW}px` : ''};background:${S.o.bgLog}">\n${frag}</body>\n</html>\n`;
 }
 
 // ───────── 3. 렌더링: 카드 모드 ─────────
@@ -1260,7 +1263,7 @@ $('pvAll').onclick = () => { previewAll = !previewAll; renderView(); };
 $('pvName').onchange = e => { pvName = e.target.value; previewAll = false; renderView(); };
 $('fname').oninput = e => { tgtOf(curTab).fname = e.target.value; };
 $('dlBtn').onclick = () => download(tgtOf(curTab).fname || 'log-BK.html', docHtml(curTab), 'text/html;charset=utf-8');
-$('copyBtn').onclick = () => copyText(docHtml(curTab));
+$('copyBtn').onclick = () => copyText(docHtml(curTab, true));   // 블로그용 코드 (형식 B여도 문서 틀 없이)
 $('optLock').onchange = e => { S.lock[curTab] = e.target.checked; update(); };
 $('optArrow').onchange = e => {
   if (curTab === 'info') { S.o.arrow = e.target.checked; syncOpts(); } else S.tabArrow[curTab] = e.target.checked;
@@ -1590,21 +1593,24 @@ function loadAspect(img) {
 }
 $('dlgLink').onchange = e => { cfgOf(dlgName).link = e.target.value; renderDlg(); update({ chars: true }); };
 $('dlgClose').onclick = () => dlg.close();
-dlg.addEventListener('close', () => update({ chars: true }));
+dlg.addEventListener('close', () => { update({ chars: true }); if (S.o.logAv) importAvatars(); });
 $('dlgFoldAll').onclick = () => {
   const sh = shut(), F = fold(cfgOf(dlgName));
   if (F.every((_, fi) => sh.has(fi))) sh.clear(); else { F.forEach((_, fi) => sh.add(fi)); adjIdx = -1; }
   renderDlg();
 };
 $('dlgAdd').onclick = () => { const F = fold(cfgOf(dlgName)); let n = F.length + 1; while (F.includes('폴더 ' + n)) n++; F.push('폴더 ' + n); renderDlg(); saveLocal(); };
+// v1.7.3: 표정 줄의 그림 바꾸기 (주소·PC 파일 공통). 로그 초상화 줄이면 일반 표정 줄로 바뀜(av 제거)
+const setImg = (img, src, data, a) => { img.src = src; img.data = data; img.a = a; delete img.av; };
 $('dlgImgs').oninput = e => {
   if (e.target.classList.contains('fdn')) { fold(cfgOf(dlgName))[e.target.closest('.fold').dataset.fi] = e.target.value; return saveLocal(); }   // 폴더 이름 (출력에 영향 없음)
   const row = e.target.closest('.irow'); if (!row || e.target.classList.contains('fsel')) return;
   const img = curImgs()[row.dataset.k];
   if (e.target.classList.contains('lbl')) img.l = e.target.value;
   if (e.target.classList.contains('url')) {
-    img.src = e.target.value.trim(); img.data = ''; img.a = 0;
+    const wasAv = !!img.av; setImg(img, e.target.value.trim(), '', 0);
     row.querySelector('.thumb').setAttribute('style', bgStyle(img));
+    if (wasAv) e.target.placeholder = '이미지 주소 (URL)';
     clearTimeout(loadAspect.t); loadAspect.t = setTimeout(() => loadAspect(img), 400);
   }
   update();
@@ -1631,7 +1637,7 @@ async function shrink(blob) {   // 파일 내 이미지: 320px 줄이기 (용량
 $('imgFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   const img = curImgs()[e.target.dataset.k];
-  try { const r = await shrink(f); img.data = r.data; img.a = r.a; img.src = ''; } catch { toast('이미지를 읽지 못했습니다'); }
+  try { const r = await shrink(f); setImg(img, '', r.data, r.a); } catch { toast('이미지를 읽지 못했습니다'); }
   e.target.value = ''; renderDlg(); update({ chars: true });
 };
 
@@ -1859,15 +1865,17 @@ async function avToWebp(u) {
   return cv.toDataURL('image/webp', 0.85);
 }
 let avRun = 0;
+// 이 초상화가 그림과 함께 등록되어 있는지. v1.7.3: 그림이 빠진 초상화 줄은 없는 것으로 봄 → 다시 켜면 채움 (빈 줄은 등록할 때 정리)
+const hasAv = (c, h) => !!c && c.imgs.some(i => i.av === h && hasImg(i));
 async function importAvatars() {
-  const run = ++avRun, todo = avTargets().filter(([n, h]) => avPool.has(h) && !(S.chars[n]?.imgs || []).some(i => i.av === h));
+  const run = ++avRun, todo = avTargets().filter(([n, h]) => avPool.has(h) && !hasAv(S.chars[n], h));
   if (!todo.length) return renderAvStatus();
   $('avStatus').textContent = `로그 초상화 ${todo.length}장을 등록하는 중…`;
   const conv = new Map();
   for (const h of new Set(todo.map(([, h]) => h))) { try { conv.set(h, await avToWebp(avPool.get(h))); } catch { /* 읽지 못한 그림은 건너뜀 */ } if (run !== avRun) return; }
   if (!S.o.logAv) return renderAvStatus();
   for (const [n, h] of todo) {
-    const c = cfgOf(n), d = conv.get(h); if (!d || c.imgs.some(i => i.av === h)) continue;
+    const c = cfgOf(n), d = conv.get(h); if (!d || hasAv(c, h)) continue;
     for (let k = c.imgs.length - 1; k >= 0; k--) if (!hasImg(c.imgs[k])) { c.imgs.splice(k, 1); dropImgRef(c, k); }   // 비어 있는 기본 줄 정리 (대사별 표정·구간 번호도 맞춤)
     const F = fold(c); let fi = F.indexOf(AV_FOLDER);
     if (fi < 0 && F.length === 1 && !c.imgs.length) F[(fi = 0)] = AV_FOLDER;   // 이미지가 하나도 없으면 기본 폴더 이름을 바꿔서 사용
