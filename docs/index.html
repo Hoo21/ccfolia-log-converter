@@ -139,7 +139,7 @@ h3.dh{font-size:13px;margin:16px 0 4px}
 <main>
   <header>
     <div>
-      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.5</span></h1>
+      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.6</span></h1>
       <p class="sub">※ 모든 처리는 브라우저 안에서만 이루어집니다.</p>
     </div>
     <nav class="quick"><button data-go="pOpts" disabled>출력 설정</button><button data-go="result" disabled>결과 미리보기</button></nav>
@@ -235,12 +235,12 @@ h3.dh{font-size:13px;margin:16px 0 4px}
       <p class="muted" style="margin-top:0">로그 중간에 넣을 큰 이미지입니다. 이미지를 블로그나 이미지 호스팅에 먼저 올린 뒤 주소를 넣으세요.<br>코드를 복사해서 백업 파일의 원하는 줄 <b>아래에 새 줄로</b> 붙여 넣으세요. 블로그 HTML 편집 화면에서 Ctrl+F로 앞 대사를 검색하면 위치를 찾기 쉽습니다.</p>
       <div id="cutList"></div>
       <p class="muted" style="margin:6px 0 0">결과 미리보기에서 <b>나레이션을 클릭</b>하면 그 위·아래에 컷씬을 넣을 수 있습니다. 넣은 컷씬은 다운로드·복사하는 출력 파일에 자동으로 들어갑니다.</p>
-      <div class="row" style="margin-top:8px"><button id="cutAdd">+ 컷씬 추가</button><label><input type="checkbox" data-o="cutLazy"> 화면에 가까워질 때 불러오기 <span class="muted">(loading="lazy", 컷씬마다 +15 B. 긴 로그에서 블로그가 빨리 열림)</span></label></div>
-      <p class="muted"><b>복사</b>: 이 변환기로 출력한 백업 파일에 붙일 때. 컷씬이 하나라도 등록되어 있으면 출력 파일에 컷씬 CSS(약 0.4 KB)가 들어갑니다. 컷씬은 우클릭·끌기·드래그 선택이 되지 않습니다.<br><b>단독 복사</b>: 컷씬 CSS가 없는 예전 백업 파일이나 이미 올린 글에 붙일 때. 스타일이 코드 안에 들어가서 조금 깁니다.<br>컷씬 위아래 여백은 <b>출력 옵션 → 여백 · 글자 크기</b>에서 정합니다. (기본: 항목 위아래 여백과 같음)</p>
+      <div class="row" style="margin-top:8px"><button id="cutAdd">+ 컷씬 추가</button><span class="muted">컷씬은 화면에 가까워질 때 불러옵니다.</span></div>
+      <p class="muted"><b>복사</b>: 컷씬이 하나라도 등록되어 있으면 출력 파일에 컷씬 CSS(약 0.6 KB)가 들어갑니다. 컷씬은 우클릭·끌기·드래그 선택이 되지 않습니다.<br><b>단독 복사</b>: v1.7.5 이전 백업 파일이나 이미 올린 글에 붙일 때. 스타일이 코드 안에 들어가서 조금 깁니다.<br>컷씬 위아래 여백은 <b>출력 옵션 → 여백 · 글자 크기</b>에서 정합니다. (기본: 항목 위아래 여백과 같음)</p>
     </div>
 
     <div id="pCss" class="hidden">
-      <p class="muted" style="margin-top:0">출력 파일의 기본 디자인입니다. 프로필 이미지 칸·캐릭터 색·이미지 규칙은 변환할 때 출력 옵션에 맞춰 자동으로 뒤에 붙습니다.<br>블로그 스킨에 디자인이 바뀌지 않도록, 출력 파일에서는 <b>.ccbk</b>가 <b>:is(#ccbk#ccbk,.ccbk)</b>로 바뀌고 모든 속성 끝에 <b>!important</b>가 자동으로 붙습니다. 여기에는 직접 붙이지 않아도 됩니다.</p>
+      <p class="muted" style="margin-top:0">출력 파일의 기본 디자인입니다. 프로필 이미지 칸·캐릭터 색·이미지 규칙은 변환할 때 출력 옵션에 맞춰 자동으로 뒤에 붙습니다.</p>
       <textarea id="css" rows="18" spellcheck="false"></textarea>
       <div class="row" style="margin-top:6px"><button id="cssReset">기본값으로 되돌리기</button></div>
     </div>
@@ -346,7 +346,7 @@ const SIZE_OPTS = [
   { g: '글자 크기', k: 'fsBadge', label: '판정·시스템 배지', def: 13, unit: 'px', min: 8, max: 40, step: 1, css: '.ccbk .r b,.ccbk .y::before{font-size:$}' },
   { g: '글자 크기', k: 'fsCardB', label: '카드 배지(이름)', def: 13, unit: 'px', min: 8, max: 40, step: 1, css: '.ccbk .i b{font-size:$}' },
   { g: '글자 크기', k: 'fsCardP', label: '카드 내용', def: 14, unit: 'px', min: 8, max: 40, step: 1, css: '.ccbk .i p{font-size:$}' },
-  // 크기 제한. css 없음: 컷씬 최대 높이는 cutDecl(), 로그 최대 폭은 형식 B 문서 틀에서 사용
+  // 크기 제한. css 없음: 컷씬 최대 높이는 cutBox(), 로그 최대 폭은 형식 B 문서 틀에서 사용
   // nm: 알림에 쓰는 짧은 이름 / on: 켜기 체크박스(출력 옵션 키, 꺼지면 칸 비활성) / hint: 칸 아래 안내
   { g: '크기 제한', k: 'cutMaxH', label: '컷씬 최대 높이', hint: '컷씬의 높이를 수정합니다: 화면 높이 기준 · 0 = 제한 없음', def: 80, unit: '%', min: 0, max: 100, step: 1 },
   { g: '크기 제한', k: 'logMaxW', label: '최대 폭', nm: '로그 최대 폭', def: 900, unit: 'px', min: 300, max: 2560, step: 10,
@@ -370,7 +370,7 @@ const toHex = v => { const m = /^#?([0-9a-f]{6})$/i.exec(String(v).trim()); retu
 // 원본 로그에서 시스템 메시지를 찾는 이름 (코코포리아 고정값은 system)
 const SYS_NAME = 'system';
 const isSys = name => name === SYS_NAME;
-const DEF_OPTS = { fmt: 'B', prof: true, hideEmpty: false, embed: false, mCard: false, mTalk: false, mSys: true, arrow: true, cardGap: false, sysBadge: 'System', cutLazy: true, cutGap: true, wrapTalk: true, wrapEtc: true, wideLim: true, logAv: false,
+const DEF_OPTS = { fmt: 'B', prof: true, hideEmpty: false, embed: false, mCard: false, mTalk: false, mSys: true, arrow: true, cardGap: false, sysBadge: 'System', cutGap: true, wrapTalk: true, wrapEtc: true, wideLim: true, logAv: false,
   ...Object.fromEntries([...SIZE_OPTS, ...COLOR_OPTS].map(r => [r.k, r.def])) };
 const LOCK = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7z'/%3E%3C/svg%3E\")";
 const BASE_CSS = `.ccbk{--bg:#1e1f21;--tx:#dadada;--dv:rgba(255,255,255,.08);background:var(--bg);color:var(--tx);font:14px/1.6 sans-serif;padding:20px 6%;word-break:keep-all;overflow-wrap:break-word}
@@ -514,14 +514,14 @@ const migrateCss = css => css.replace(/\.m\s+p\s*\+\s*p\b/g, '.m p')
 let wideMigrated = false;   
 function loadSettings(obj) {
   const n = newSettings(); wideMigrated = false;
-  if (obj && typeof obj === 'object') { Object.assign(n, obj); n.o = { ...DEF_OPTS, ...(obj.o || {}) }; delete n.o.sys; delete n.o.cutPad;
+  if (obj && typeof obj === 'object') { Object.assign(n, obj); n.o = { ...DEF_OPTS, ...(obj.o || {}) }; delete n.o.sys; delete n.o.cutPad; delete n.o.cutLazy;
     if (obj.o && !(obj.v >= 2)) { const w = +obj.o.logMaxW || 0; if (!('wideLim' in obj.o)) n.o.logMaxW = w > 0 ? w : DEF_OPTS.logMaxW;
       if (!n.o.wideLim) { n.o.wideLim = true; wideMigrated = true; } } }
   n.v = 3;
   // 불러온 값 검사: 잘못된 값이 출력 CSS에 들어가지 않도록 기본값으로 되돌림
   for (const r of COLOR_OPTS) n.o[r.k] = toHex(n.o[r.k]) || r.def;
   for (const r of SIZE_OPTS) n.o[r.k] = clampOpt(r, +n.o[r.k]);
-  n.cuts = Array.isArray(n.cuts) ? n.cuts.filter(c => c && typeof c === 'object').map(c => ({ id: int(c.id, -1), n: String(c.n ?? ''), u: String(c.u ?? '') })) : [];
+  n.cuts = Array.isArray(n.cuts) ? n.cuts.filter(c => c && typeof c === 'object').map(c => ({ id: int(c.id, -1), n: String(c.n ?? ''), u: String(c.u ?? ''), ...(int(c.w) > 0 && int(c.h) > 0 ? { w: int(c.w), h: int(c.h) } : {}) })) : [];
   { const used = new Set(); let next = Math.max(0, ...n.cuts.map(c => c.id + 1));   // 컷씬 고유 번호: 없거나 겹치면 새 번호
     for (const c of n.cuts) { if (c.id < 0 || used.has(c.id)) c.id = next++; used.add(c.id); } }
   // 나머지 항목도 형식이 다르면 기본값 (손상된 설정 파일로 인한 오류 방지)
@@ -864,18 +864,37 @@ function boxCss(anyTalk, anyImg) {
 // 사용자가 코드를 복사해서 원하는 줄 아래에 붙여 넣기 기능 추가. 주소 연결만 지원 (파일 안에 넣지 않음)
 const isUrl = u => /^https?:\/\/\S+$/i.test(u.trim());
 const validCuts = () => S.cuts.filter(c => isUrl(c.u));
-// 스킨이 이미지에 줄 수 있는 크기·여백·테두리 규칙을 덮음
-// 이미지 칸은 항상 로그 폭(width:100%) → 위쪽 구분선(이미지의 border-top)이 항상 로그 폭 전체로 그리기
-// 최대 높이에 걸리면 칸 높이만 줄고, 그림은 칸 안에서 비율 유지·가운데(object-fit:contain). 최대 높이가 0이면 object-fit 불필요
-// 상호작용 막기: pointer-events:none → 마우스·터치가 이미지에 닿지 않음 (우클릭 메뉴·새 탭에서 열기·끌기 X)
-//  user-select:none → 드래그 선택·복사에 이미지가 들어가지 않음 / -webkit-touch-callout:none → iOS 길게 누르기 메뉴 X
-const cutDecl = () => `display:block;width:100%;height:auto;${S.o.cutMaxH ? `max-height:${S.o.cutMaxH}vh;object-fit:contain;` : ''}margin:0;${S.o.cutGap ? '' : 'padding:0;'}border-right:0;border-bottom:0;border-left:0;border-radius:0;box-shadow:none;float:none;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none`;
-const cutCss = () => (validCuts().length ? ['/* 컷씬 */', `.ccbk .c{${cutDecl()}}`] : []);   // 등록된 컷씬이 없으면 0 B
-// alone: 컷씬 CSS가 없는 곳에 붙일 코드 (스타일을 코드 안에 넣음, 스킨 영향 없도록 !important)
+// v1.7.6: 컷씬은 <img>가 아니라 배경 이미지 칸 <div class="c" style="aspect-ratio:가로/세로;--u:url(주소)">
+// 상호작용 막기: pointer-events:none(우클릭 메뉴·끌기 X), user-select:none(드래그 선택·복사 X), -webkit-touch-callout:none(iOS 길게 누르기 메뉴 X)
+const cutBox = () => `display:block;position:relative;width:100%;height:auto;${S.o.cutMaxH ? `max-height:${S.o.cutMaxH}vh;object-fit:contain;` : ''}margin:0;${S.o.cutGap ? '' : 'padding:0;'}border-right:0;border-bottom:0;border-left:0;border-radius:0;box-shadow:none;float:none;font-size:0;line-height:0;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none`;
+const cutPic = u => `content:"";position:absolute;inset:0;padding:inherit;box-sizing:border-box;background:${u} 50%/contain no-repeat content-box`;
+const cutCss = () => (validCuts().length ? ['/* 컷씬 */', `.ccbk .c{${cutBox()}}`, `.ccbk .c::before{${cutPic('var(--u)')}}`] : []);   // 등록된 컷씬이 없으면 0 B
+const urlBare = u => (/^[^\s"'()\\]+$/.test(u) ? `url(${u})` : cssUrl(u));   // 스타일 속성 안: 따옴표가 필요 없는 주소는 그대로 (&quot; 2개 절약)
+const impAll = d => d.replace(/;/g, '!important;') + '!important';   // 단독 복사: 스타일 속성의 모든 선언에 !important
+const cutRatio = c => c.w > 0 && c.h > 0;
+// alone: 컷씬 CSS가 없는 곳(예전 백업 파일·이미 올린 글)에 붙일 코드. 바깥 칸 + 안쪽 그림 div 
 function cutCode(c, alone) {
-  const lazy = S.o.cutLazy ? ' loading="lazy"' : '', src = esc(c.u.trim());
-  return alone ? `<img src="${src}"${lazy} style="${cutDecl().replace(/;/g, '!important;')}!important">` : `<img class="c" src="${src}"${lazy}>`;
+  const u = c.u.trim();
+  if (!cutRatio(c)) return alone ? `<img src="${esc(u)}" loading="lazy" style="${impAll(cutBox())}">` : `<img class="c" src="${esc(u)}" loading="lazy">`;
+  const ar = `aspect-ratio:${c.w}/${c.h}`;
+  return alone ? `<div style="${esc(impAll(`${cutBox().replace('object-fit:contain;', '')};${ar}`))}"><div style="${esc(impAll(cutPic(urlBare(u)).replace('content:"";', '')))}"></div></div>`
+    : `<div class="c" style="${ar};--u:${esc(urlBare(u))}"></div>`;
 }
+// 컷씬 그림 크기 읽기 (가로·세로는 설정에 저장 → 출력의 aspect-ratio). 같은 주소는 한 번만. 실패한 주소는 페이지를 열어 둔 동안 기억
+const cutWait = new Set(), cutFail = new Set();
+function measureCuts() {
+  for (const c of validCuts()) {
+    const u = c.u.trim();
+    if (cutRatio(c) || cutWait.has(u) || cutFail.has(u)) continue;
+    cutWait.add(u);
+    const im = new Image();
+    im.onload = () => { cutWait.delete(u); for (const x of S.cuts) if (x.u.trim() === u) Object.assign(x, { w: im.naturalWidth, h: im.naturalHeight }); update({ checks: true }); };
+    im.onerror = () => { cutWait.delete(u); cutFail.add(u); update({ checks: true }); };
+    im.src = u;
+  }
+}
+const cutBusy = () => validCuts().some(c => !cutRatio(c) && cutWait.has(c.u.trim()));   // 크기를 읽는 중인 컷씬이 있으면 출력을 잠시 막음
+const outReady = () => (cutBusy() ? (toast('컷씬 이미지 크기를 읽는 중입니다. 잠시 후 다시 눌러 주세요'), false) : true);
 const placedOf = id => S.cutAt.filter(x => x.c === id && tabs.has(x.tab));   // 지금 불러온 로그에 넣은 위치
 function renderCuts() {
   $('cutList').innerHTML = S.cuts.map((c, i) => { const n = placedOf(c.id).length; return `<div class="cut" data-ci="${i}"><img alt="" ${isUrl(c.u) ? `src="${esc(c.u.trim())}"` : ''}>` +
@@ -886,13 +905,13 @@ function renderCuts() {
 $('cutAdd').onclick = () => { S.cuts.push({ id: Math.max(0, ...S.cuts.map(c => c.id + 1)), n: '', u: '' }); renderCuts(); $('cutList').lastElementChild.querySelector('.url').focus(); saveLocal(); };
 $('cutList').addEventListener('input', e => {
   const row = e.target.closest('.cut'), f = e.target.dataset.f; if (!row || !f) return;
-  S.cuts[row.dataset.ci][f] = e.target.value;
-  if (f === 'u') update();   // 컷씬 CSS 포함 여부가 바뀔 수 있음
+  const c = S.cuts[row.dataset.ci]; c[f] = e.target.value;
+  if (f === 'u') { delete c.w; delete c.h; update(); }   // 주소가 바뀌면 크기를 다시 읽음. 컷씬 CSS 포함 여부가 바뀔 수 있음
   else saveLocal();
 });
 $('cutList').addEventListener('change', e => { if (e.target.dataset.f === 'u') renderCuts(); });   // 입력을 마치면 미리보기 그림·안내 갱신
 $('cutList').addEventListener('error', e => {   // 이미지 불러오기 실패 (error는 버블링되지 않아 캡처로 받음)
-  if (e.target.tagName === 'IMG') (e.target.style.visibility = 'hidden'), e.target.closest('.cut').querySelector('.st').textContent = '이미지를 불러오지 못했습니다. 주소를 확인하세요.';
+  if (e.target.tagName === 'IMG') (e.target.style.visibility = 'hidden'), e.target.closest('.cut').querySelector('.st').textContent = '이미지를 불러오지 못했습니다. 주소를 확인하세요. (블로그에서도 보이지 않습니다)';
 }, true);
 $('cutList').addEventListener('click', e => {
   const a = e.target.dataset.ca, row = e.target.closest('.cut'); if (!a || !row) return;
@@ -905,9 +924,8 @@ $('cutList').addEventListener('click', e => {
   }
   if (a === 'jump') { const x = placedOf(c.id)[0]; return jump({ tab: x.tab, i: x.i, cid: c.id }); }
   if (!isUrl(c.u)) return toast('먼저 이미지 주소를 넣어 주세요');
-  copyText(cutCode(c, a === 'alone'));
+  if (outReady()) copyText(cutCode(c, a === 'alone'));
 });
-$('pCuts').addEventListener('input', e => { if (e.target.dataset.o) onOpt(e); });
 
 // 출력 대상: 탭 결과 또는 전체 결과
 function outOf(key) {
@@ -1059,6 +1077,9 @@ function computeChecks() {
       if (!ok.has(x.c) || e.empty || roleOf(e.name) !== 'narr' || modeOf(x.tab) !== 'log') { n++; loc ??= { tab: x.tab, i: x.i }; }
     }
     if (n) list.push({ lv: 'w', text: `넣은 컷씬 ${n}개가 출력되지 않습니다. (컷씬 주소가 없거나, 넣은 메시지가 나레이션이 아님)`, loc });
+    // v1.7.6: 그림을 불러오지 못해 크기를 모르는 컷씬 → 예전 <img> 방식으로 출력 (블로그에서 글을 열 때 바로 내려받음)
+    const bad = validCuts().filter(c => !cutRatio(c) && cutFail.has(c.u.trim()));
+    if (bad.length) list.push({ lv: 'w', text: `컷씬 ${bad.length}개의 이미지를 불러오지 못했습니다: ${bad.map(c => c.n || '이름 없음').join(', ')} — 주소를 확인하세요. 이대로 출력하면 예전 방식(<img>)으로 들어가 블로그에서 글을 열 때 바로 내려받습니다.` });
   }
   { // 새 형식 판정 중 결과 표기가 판정 결과 표에 없는 것 (결과 클래스로 색만 정함)
     const unk = new Map();
@@ -1076,7 +1097,7 @@ function computeChecks() {
   { // v1.7.4: 직접 고친 CSS에서 대사 문단(.m p)을 꾸미는 규칙은 첫 문단에 적용되지 않음 (간격 규칙은 제외)
     const odd = (S.css || '').replace(/\/\*[\s\S]*?\*\//g, '').split('}').map(r => r.split('{'))
       .filter(([s, d]) => d && P_SEL.test(s) && !/^\s*margin-top:[^;]*;?\s*$/.test(d)).map(([s]) => s.trim());
-    if (odd.length) list.push({ lv: 'w', text: `CSS 탭에서 고친 대사 문단 규칙 ${odd.length}개는 대사의 첫 문단에 적용되지 않습니다 (v1.7.4부터 첫 문단은 p로 감싸지 않음). 대사 전체에 적용하려면 ".m p" 대신 ".m"을 쓰세요: ${odd.slice(0, 3).join(' / ')}` });
+    if (odd.length) list.push({ lv: 'w', text: `CSS 탭에서 고친 대사 문단 규칙 ${odd.length}개는 대사의 첫 문단에 적용되지 않습니다. 대사 전체에 적용하려면 ".m p" 대신 ".m"을 쓰세요: ${odd.slice(0, 3).join(' / ')}` });
   }
   if (S.o.prof) {
     const miss = [...stats].filter(([n, s]) => s.log && roleOf(n) === 'talk' && !isSys(n) && !hasImg(imgOfPick({ o: n, k: -1 })?.img)).sort((p, q) => q[1].n - p[1].n).map(([n]) => n);
@@ -1087,14 +1108,14 @@ function computeChecks() {
       const u = un.get(e.name) || un.set(e.name, { n: 0, loc: { tab: T.tab, i: e.i } }).get(e.name); u.n++;
     }
     for (const [n, u] of un) list.push({ lv: 'w', text: `가명 "${n}": 연동이 정해지지 않은 대사 ${u.n}개 (이미지 칸이 비어 있음)`, loc: u.loc, acts: [{ t: '연동 설정', a: 'open', name: n }] });
-    // v1.7.4: 원본이 큰 주소 이미지 — 출력에서는 40×40 칸
+    // v1.7.4: 원본이 큰 주소 이미지 — 출력에서는 40×40 칸이지만 블로그에서는 원본 전체를 내려받음 (파일 안에 넣기를 켜면 320px로 축소)
     if (!S.o.embed) {
       const big = [], seen = new Set();
       for (const [n, s] of stats) {
         const c = s.log && roleOf(n) === 'talk' && ownerOf(n); if (!c || seen.has(c)) continue; seen.add(c);
         c.imgs.forEach((img, k) => { const w = img.src ? natW(img.src) : 0; if (w > BIG_W) big.push(`${n} ${imgName(c, k)}(${w}px)`); });
       }
-      if (big.length) list.push({ lv: 'n', text: `원본이 큰 프로필 이미지 ${big.length}장 (가로 ${BIG_W}px 초과): ${big.slice(0, 8).join(', ')}${big.length > 8 ? ' …' : ''} — 출력에서는 40×40 칸에 쓰입니다. 가로 120~160px로 줄여 올리면 블로그 로딩이 빨라집니다.` });
+      if (big.length) list.push({ lv: 'n', text: `원본이 큰 프로필 이미지 ${big.length}장 (가로 ${BIG_W}px 초과): ${big.slice(0, 8).join(', ')}${big.length > 8 ? ' …' : ''} — 출력에서는 40×40 칸에 사용. 가로 120~160px로 줄여 올리면 블로그 로딩이 빨라집니다.` });
     }
     if (miss.length) list.push({ lv: 'n', text: `프로필 이미지가 없는 캐릭터 ${miss.length}명 (${S.o.hideEmpty ? '이미지 칸 숨김' : '빈 이미지 칸 출력'}): ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? ' …' : ''}` });
   }
@@ -1305,8 +1326,8 @@ $('allOpts').onchange = e => {
 $('pvAll').onclick = () => { previewAll = !previewAll; renderView(); };
 $('pvName').onchange = e => { pvName = e.target.value; previewAll = false; renderView(); };
 $('fname').oninput = e => { tgtOf(curTab).fname = e.target.value; };
-$('dlBtn').onclick = () => download(tgtOf(curTab).fname || 'log-BK.html', docHtml(curTab), 'text/html;charset=utf-8');
-$('copyBtn').onclick = () => copyText(docHtml(curTab, true));   // 블로그용 코드 (형식 B여도 문서 틀 없이)
+$('dlBtn').onclick = () => outReady() && download(tgtOf(curTab).fname || 'log-BK.html', docHtml(curTab), 'text/html;charset=utf-8');
+$('copyBtn').onclick = () => outReady() && copyText(docHtml(curTab, true));   // 블로그용 코드 (형식 B여도 문서 틀 없이)
 $('optLock').onchange = e => { S.lock[curTab] = e.target.checked; update(); };
 $('optArrow').onchange = e => {
   if (curTab === 'info') { S.o.arrow = e.target.checked; syncOpts(); } else S.tabArrow[curTab] = e.target.checked;
@@ -2088,7 +2109,7 @@ function update({ chars = false, checks = false, now = false } = {}) {
   needChars ||= chars; needChecks ||= chars || checks;
   clearTimeout(timer);
   const run = () => {
-    derive();
+    derive(); measureCuts();   // v1.7.6: 크기를 모르는 컷씬은 그림을 읽어 가로·세로 저장
     if (needChars) { renderChars(); renderCuts(); renderAvStatus(); needChars = false; }   // 컷씬 탭의 배치 수도 로그 기준
     renderTabbar(); renderView();
     if (needChecks) { renderChecks(); needChecks = false; }
