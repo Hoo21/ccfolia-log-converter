@@ -139,7 +139,7 @@ h3.dh{font-size:13px;margin:16px 0 4px}
 <main>
   <header>
     <div>
-      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.3</span></h1>
+      <h1>코코포리아 로그 변환기 <span class="muted" style="font-size:13px;font-weight:400">v1.7.5</span></h1>
       <p class="sub">※ 모든 처리는 브라우저 안에서만 이루어집니다.</p>
     </div>
     <nav class="quick"><button data-go="pOpts" disabled>출력 설정</button><button data-go="result" disabled>결과 미리보기</button></nav>
@@ -338,7 +338,7 @@ const SIZE_OPTS = [
   { g: '여백', k: 'padX', label: '바깥 여백 좌우', def: 6, unit: '%', min: 0, max: 30, step: 0.5, css: '.ccbk{padding-left:$;padding-right:$}' },
   { g: '여백', k: 'rowGap', label: '항목 위아래 여백', def: 15, unit: 'px', min: 0, max: 40, step: 1, css: '.ccbk>*{padding-top:$;padding-bottom:$}' },   // 이미지 칸 위치(top)는 boxCss()가 이 값으로 맞춤
   { g: '여백', k: 'lh', label: '줄 간격', def: 1.6, unit: '배', min: 1, max: 3, step: 0.05, css: '.ccbk{line-height:$}' },
-  { g: '글자 크기', k: 'fsTalk', label: '캐릭터 대사', def: 14, unit: 'px', min: 8, max: 40, step: 1, css: '.ccbk .m p{font-size:$}' },
+  { g: '글자 크기', k: 'fsTalk', label: '캐릭터 대사', def: 14, unit: 'px', min: 8, max: 40, step: 1, css: '.ccbk .m{font-size:$}' },   // v1.7.4: 첫 문단은 p 없음 → .m 전체 (이름 b는 글자 크기를 따로 가짐)
   { g: '글자 크기', k: 'fsName', label: '캐릭터 이름', def: 13, unit: 'px', min: 8, max: 40, step: 1, css: '.ccbk .m b{font-size:$}' },
   { g: '글자 크기', k: 'fsNarr', label: '나레이션', def: 14, unit: 'px', min: 8, max: 40, step: 1, css: '.ccbk .d{font-size:$}' },
   { g: '글자 크기', k: 'fsSys', label: '시스템 메시지', def: 13, unit: 'px', min: 8, max: 40, step: 1, css: '.ccbk .y{font-size:$}' },
@@ -382,7 +382,7 @@ const BASE_CSS = `.ccbk{--bg:#1e1f21;--tx:#dadada;--dv:rgba(255,255,255,.08);bac
 /* 대사 */
 .ccbk .m{position:relative}
 .ccbk .m b{display:block;margin-bottom:4px;font-size:13px;color:var(--c,#ddd)}
-.ccbk .m p+p,.ccbk .i p+p{margin-top:6px}
+.ccbk .m p,.ccbk .i p+p{margin-top:6px}
 /* 시스템 */
 .ccbk .y{text-align:center;font-size:13px;color:#d0d0d0;background:#292929}
 .ccbk .y::before{content:"System";display:table;margin:0 auto 6px;font-weight:700}
@@ -402,6 +402,7 @@ const BASE_CSS = `.ccbk{--bg:#1e1f21;--tx:#dadada;--dv:rgba(255,255,255,.08);bac
 
 // ───────── 티스토리(블로그) 스킨 영향 차단 ─────────
 // 스킨이 div·p·b에 줄 수 있는 속성을 초기화.
+// v1.7.3: 로그 항목(div·p)은 화면 근처에 올 때 그림(content-visibility) → 긴 로그의 첫 화면 계산 감소. 컷씬(img)은 제외
 const RESET_CSS = `/* 스킨 영향 차단 */
 .ccbk,.ccbk :where(div,p,b){margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;box-sizing:content-box;position:static;float:none;width:auto;height:auto;min-width:0;min-height:0;max-width:none;max-height:none;letter-spacing:normal;word-spacing:normal;text-indent:0;text-transform:none;text-decoration:none;text-shadow:none;white-space:normal;vertical-align:baseline;opacity:1;transform:none}
 .ccbk{display:block;text-align:left;font-weight:400;font-style:normal}
@@ -418,7 +419,7 @@ const colorCss = () => COLOR_OPTS.filter(r => S.o[r.k] !== r.def).map(r => r.css
 // 한국어 줄바꿈: 기본(둘 다 ON)은 BASE_CSS의 keep-all 그대로. OFF 쪽만 break-all 규칙 한 줄
 const wrapCss = () => {
   const t = S.o.wrapTalk, o = S.o.wrapEtc;
-  return t && o ? [] : [`${!t && !o ? '.ccbk' : !t ? '.ccbk .m' : '.ccbk>:not(.m)'}{word-break:break-all}`];
+  return t && o ? [] : [`${!t && !o ? '.ccbk' : !t ? '.ccbk .m' : '.ccbk>:not(.m,.g)'}{word-break:break-all}`];   // v1.7.5: 묶음(.g)은 제외 (묶음 안 대사로 상속 방지)
 };
 const designCss = () => {
   const opt = [...wrapCss(), ...Object.entries(OPT_CSS).filter(([k, [v]]) => S.o[k] === v).map(([, [, c]]) => c), ...sizeCss(), ...colorCss(), ...badgeCss()];
@@ -480,7 +481,7 @@ const DICE = [
 const ROLL_CLS = { critical: 'cr', success: 'ok', failure: 'ng', fumble: 'fb' };
 
 // ───────── 상태 ─────────
-const newSettings = () => ({ v: 2, o: { ...DEF_OPTS }, css: null, chars: {}, alias: {}, color: {}, ignore: [], exp: {}, hide: {}, cardOff: {}, tabMode: {}, noArrow: [], lock: {}, tabArrow: {}, allInc: {}, srcBase: {}, cuts: [], ranges: [], cutAt: [] });
+const newSettings = () => ({ v: 3, o: { ...DEF_OPTS }, css: null, chars: {}, alias: {}, color: {}, ignore: [], exp: {}, hide: {}, cardOff: {}, tabMode: {}, noArrow: [], lock: {}, tabArrow: {}, allInc: {}, srcBase: {}, cuts: [], ranges: [], cutAt: [] });
 let S = newSettings();
 const tabs = new Map();   // tab → { tab, base, fname, raw:[{name,color,paras}], items:[] }
 let curTab = null, previewAll = false, embedRun = 0;
@@ -504,13 +505,19 @@ const saveLocal = () => { clearTimeout(saveT); saveT = setTimeout(saveNow, 800);
 addEventListener('pagehide', saveNow);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 const int = (v, d = 0) => (v !== '' && v != null && Number.isInteger(+v) ? +v : d);
+// v1.7.4: 대사 첫 문단이 <p>가 아니게 됨 → 직접 고친 CSS(설정 버전 2 이하) 변환
+//  .m p+p(둘째 문단 간격) → .m p / 글자색·글자 크기만 바꾸는 .m p 규칙 → .m (이름 b는 색·크기를 따로 가지므로 이름 모양 같음)
+//  그 밖의 .m p 규칙은 뜻을 알 수 없어 그대로 두고 검사 목록에서 안내
+const P_SEL = /\.m\s+p(?![\w+-])/, SAFE_P = /^\s*(?:(?:color|font-size)\s*:[^;]*;?\s*)+$/;
+const migrateCss = css => css.replace(/\.m\s+p\s*\+\s*p\b/g, '.m p')
+  .replace(/([^{}]*)\{([^{}]*)\}/g, (all, sel, d) => (P_SEL.test(sel) && SAFE_P.test(d) ? sel.replace(new RegExp(P_SEL.source, 'g'), '.m') + '{' + d + '}' : all));
 let wideMigrated = false;   
 function loadSettings(obj) {
   const n = newSettings(); wideMigrated = false;
   if (obj && typeof obj === 'object') { Object.assign(n, obj); n.o = { ...DEF_OPTS, ...(obj.o || {}) }; delete n.o.sys; delete n.o.cutPad;
     if (obj.o && !(obj.v >= 2)) { const w = +obj.o.logMaxW || 0; if (!('wideLim' in obj.o)) n.o.logMaxW = w > 0 ? w : DEF_OPTS.logMaxW;
       if (!n.o.wideLim) { n.o.wideLim = true; wideMigrated = true; } } }
-  n.v = 2;
+  n.v = 3;
   // 불러온 값 검사: 잘못된 값이 출력 CSS에 들어가지 않도록 기본값으로 되돌림
   for (const r of COLOR_OPTS) n.o[r.k] = toHex(n.o[r.k]) || r.def;
   for (const r of SIZE_OPTS) n.o[r.k] = clampOpt(r, +n.o[r.k]);
@@ -525,6 +532,7 @@ function loadSettings(obj) {
     if (want !== got) n[k] = def[k];
   }
   if (n.css != null && typeof n.css !== 'string') n.css = null;
+  if (n.css && !(obj && obj.v >= 3)) n.css = migrateCss(n.css);   // v1.7.4 (설정 버전 3): 버전 2 이하에서 직접 고친 CSS를 한 번 변환
   for (const [name, c] of Object.entries(n.chars)) {
     if (!c || typeof c !== 'object') { delete n.chars[name]; continue; }
     c.role = typeof c.role === 'string' ? c.role : 'talk'; c.link = typeof c.link === 'string' ? c.link : '';
@@ -819,17 +827,29 @@ function renderLog(items, limit = 0, preview = false) {
     if (o.mTalk && pend && pend.t === 'm' && pend.key === key) { pend.p.push(...e.paras); pend.is.push(e.i); continue; }
     flush();
     const k = kMap.get(kk).k, name = e.name, tab = e.tab, fv = f;
-    pend = { t: 'm', key, p: [...e.paras], is: [e.i], html() { return `<div class="m k${k}${fv ? ' f' + fv.id : ''}"${di(this.is, tab)}><b>${esc(name)}</b>${this.p.map(p => `<p>${p}</p>`).join('')}</div>`; } };
+    pend = { t: 'm', key, p: [...e.paras], is: [e.i], html() { return `<div class="m k${k}${fv ? ' f' + fv.id : ''}"${di(this.is, tab)}><b>${esc(name)}</b>${this.p.map((p, j) => (j ? `<p>${p}</p>` : p)).join('')}</div>`; } };
+    // v1.7.4: 첫 문단은 <p> 없이 이름 바로 뒤에 (이름 b가 블록이라 배치 같음). 둘째 문단부터 <p> + 위 간격
   }
   flush();
   const fs = [...fMap.values()].sort((a, b) => a.o - b.o || a.r - b.r);
   fs.forEach((v, n) => { v.id = n + 1; });
   const noC = s => String(s).replace(/\*\//g, '');
-  const css = [designCss(), ...boxCss(kMap.size > 0, fs.length > 0), ...cutCss(), '/* 캐릭터 색 */'];
+  const grouped = !preview && out.length > GROUP_N;           // v1.7.5: 출력 파일의 긴 로그만 묶음 (미리보기는 그대로)
+  const css = [designCss(), ...(grouped ? [GROUP_CSS] : []), ...boxCss(kMap.size > 0, fs.length > 0), ...cutCss(), '/* 캐릭터 색 */'];
   for (const v of kMap.values()) css.push(`.ccbk .k${v.k}{--c:${v.color}}/*${noC(v.name)}*/`);
   if (fs.length) css.push('/* 프로필 이미지 */');
   for (const v of fs) css.push(`.ccbk .m.f${v.id}::before{${v.st}}/*${noC(v.label.trim())}*/`);
-  return { css: css.join('\n'), body: out.map(x => (typeof x === 'string' ? x : x.html())).join('\n'), count: out.length };
+  const rows = out.map(x => (typeof x === 'string' ? x : x.html()));
+  return { css: css.join('\n'), body: grouped ? groupRows(rows) : rows.join('\n'), count: out.length };
+}
+// ───────── v1.7.5: 긴 로그 묶음 ─────────
+// 항목 GROUP_N개마다 <div class="ccbk g">로 감쌈.
+const GROUP_N = 50, GROUP_H = 4000;   // 묶음 항목 수, 아직 그리지 않은 묶음의 예상 높이(px). 한 번 그린 묶음은 실제 높이를 기억(auto)
+const GROUP_CSS = `.ccbk>.g{margin:0;padding:0;border-right:0;border-bottom:0;border-left:0;border-radius:0;background:none;box-shadow:none;font:inherit;color:inherit;contain-intrinsic-size:auto ${GROUP_H}px}`;
+function groupRows(rows) {
+  const out = [];
+  for (let i = 0; i < rows.length; i += GROUP_N) out.push('<div class="ccbk g">', ...rows.slice(i, i + GROUP_N), '</div>');
+  return out.join('\n');
 }
 // 프로필 이미지 칸
 //  이미지 칸 출력하지 않기 OFF → 모든 대사에 칸 / ON → 이미지 번호(f1…)가 있는 대사만
@@ -872,7 +892,7 @@ $('cutList').addEventListener('input', e => {
 });
 $('cutList').addEventListener('change', e => { if (e.target.dataset.f === 'u') renderCuts(); });   // 입력을 마치면 미리보기 그림·안내 갱신
 $('cutList').addEventListener('error', e => {   // 이미지 불러오기 실패 (error는 버블링되지 않아 캡처로 받음)
-  if (e.target.tagName === 'IMG') (e.target.style.visibility = 'hidden'), e.target.closest('.cut').querySelector('.st').textContent = '이미지를 불러오지 못했습니다. 주소를 확인하세요. (블로그에서도 보이지 않습니다)';
+  if (e.target.tagName === 'IMG') (e.target.style.visibility = 'hidden'), e.target.closest('.cut').querySelector('.st').textContent = '이미지를 불러오지 못했습니다. 주소를 확인하세요.';
 }, true);
 $('cutList').addEventListener('click', e => {
   const a = e.target.dataset.ca, row = e.target.closest('.cut'); if (!a || !row) return;
@@ -897,14 +917,13 @@ function outOf(key) {
 const tgtOf = key => (key === ALL ? allInfo : tabs.get(key));   // 파일 이름(fname)을 가진 객체
 // 출력 파일에서는 한 줄 전체가 주석인 구역 제목(/* 대사 */ 등)을 지움. 캐릭터 이름·표정 이름 주석(줄 끝)은 남김
 const stripCmt = css => css.replace(/^[ \t]*\/\*[^\n]*?\*\/[ \t]*(?:\n|$)/gm, '');
-// v1.7.3: frag = true → 형식과 관계없이 블로그용 코드만 ([코드 복사]). B 문서 틀 스타일은 <style>body{…}가 아니라 body 속성
-//  → 문서 전체를 블로그에 붙여도 편집기가 body 태그를 지우므로 블로그 페이지(폭·배경)에 영향 없음
+// v1.7.3: frag = true → 형식과 관계없이 블로그용 코드만 ([코드 복사])
 function docHtml(key, fragOnly = false) {
   const O = outOf(key), { css, body } = renderLog(O.items);
   // 형식 A·B 공통. B는 해당 내용 문서 틀로 감싼 것.
   const frag = `<style>\n${shieldCss(stripCmt(css))}\n</style>\n${WRAP_OPEN}\n${body}\n</div>\n`;
   if (fragOnly || S.o.fmt === 'A') return frag;
-  return `<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>${esc(O.base)} [${esc(O.label)}]</title>\n</head>\n<body style="margin:0${S.o.wideLim ? ` auto;max-width:${S.o.logMaxW}px` : ''};background:${S.o.bgLog}">\n${frag}</body>\n</html>\n`;
+  return `<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>${esc(O.base)} [${esc(O.label)}]</title>\n<style>body:has(>#ccbk){margin:0${S.o.wideLim ? ` auto;max-width:${S.o.logMaxW}px` : ''};background:${S.o.bgLog}}</style>\n</head>\n<body>\n${frag}</body>\n</html>\n`;
 }
 
 // ───────── 3. 렌더링: 카드 모드 ─────────
@@ -1054,6 +1073,11 @@ function computeChecks() {
   }
   if (saveFailed) list.push({ lv: 'w', text: '브라우저 저장 공간(약 5 MB)이 부족해 설정이 자동 저장되지 않고 있습니다. 설정을 내보내 백업한 뒤, 캐릭터 탭의 "안 쓰는 캐릭터 정리"로 용량을 줄여 주세요.',
     acts: [{ t: '설정 내보내기', a: 'export' }] });
+  { // v1.7.4: 직접 고친 CSS에서 대사 문단(.m p)을 꾸미는 규칙은 첫 문단에 적용되지 않음 (간격 규칙은 제외)
+    const odd = (S.css || '').replace(/\/\*[\s\S]*?\*\//g, '').split('}').map(r => r.split('{'))
+      .filter(([s, d]) => d && P_SEL.test(s) && !/^\s*margin-top:[^;]*;?\s*$/.test(d)).map(([s]) => s.trim());
+    if (odd.length) list.push({ lv: 'w', text: `CSS 탭에서 고친 대사 문단 규칙 ${odd.length}개는 대사의 첫 문단에 적용되지 않습니다 (v1.7.4부터 첫 문단은 p로 감싸지 않음). 대사 전체에 적용하려면 ".m p" 대신 ".m"을 쓰세요: ${odd.slice(0, 3).join(' / ')}` });
+  }
   if (S.o.prof) {
     const miss = [...stats].filter(([n, s]) => s.log && roleOf(n) === 'talk' && !isSys(n) && !hasImg(imgOfPick({ o: n, k: -1 })?.img)).sort((p, q) => q[1].n - p[1].n).map(([n]) => n);
     // 연동이 정해지지 않은 가명 대사
@@ -1063,9 +1087,28 @@ function computeChecks() {
       const u = un.get(e.name) || un.set(e.name, { n: 0, loc: { tab: T.tab, i: e.i } }).get(e.name); u.n++;
     }
     for (const [n, u] of un) list.push({ lv: 'w', text: `가명 "${n}": 연동이 정해지지 않은 대사 ${u.n}개 (이미지 칸이 비어 있음)`, loc: u.loc, acts: [{ t: '연동 설정', a: 'open', name: n }] });
+    // v1.7.4: 원본이 큰 주소 이미지 — 출력에서는 40×40 칸
+    if (!S.o.embed) {
+      const big = [], seen = new Set();
+      for (const [n, s] of stats) {
+        const c = s.log && roleOf(n) === 'talk' && ownerOf(n); if (!c || seen.has(c)) continue; seen.add(c);
+        c.imgs.forEach((img, k) => { const w = img.src ? natW(img.src) : 0; if (w > BIG_W) big.push(`${n} ${imgName(c, k)}(${w}px)`); });
+      }
+      if (big.length) list.push({ lv: 'n', text: `원본이 큰 프로필 이미지 ${big.length}장 (가로 ${BIG_W}px 초과): ${big.slice(0, 8).join(', ')}${big.length > 8 ? ' …' : ''} — 출력에서는 40×40 칸에 쓰입니다. 가로 120~160px로 줄여 올리면 블로그 로딩이 빨라집니다.` });
+    }
     if (miss.length) list.push({ lv: 'n', text: `프로필 이미지가 없는 캐릭터 ${miss.length}명 (${S.o.hideEmpty ? '이미지 칸 숨김' : '빈 이미지 칸 출력'}): ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? ' …' : ''}` });
   }
   return list;
+}
+// v1.7.4: 주소 이미지의 원본 가로 크기 (페이지를 열어 둔 동안만 기억, 저장 X). 읽는 중 0 · 실패 -1. 큰 이미지가 확인되면 검사 목록 다시 그림
+const BIG_W = 300, natSize = new Map();
+function natW(u) {
+  if (!natSize.has(u)) {
+    natSize.set(u, 0); const im = new Image();
+    im.onload = () => { natSize.set(u, im.naturalWidth); if (im.naturalWidth > BIG_W) update({ checks: true }); };
+    im.onerror = () => natSize.set(u, -1); im.src = u;
+  }
+  return natSize.get(u);
 }
 function renderChecks() {
   const list = [...loadNotes.map(text => ({ lv: 'n', text })), ...computeChecks()], warn = list.filter(c => c.lv === 'w').length;
@@ -1880,7 +1923,7 @@ async function importAvatars() {
     const F = fold(c); let fi = F.indexOf(AV_FOLDER);
     if (fi < 0 && F.length === 1 && !c.imgs.length) F[(fi = 0)] = AV_FOLDER;   // 이미지가 하나도 없으면 기본 폴더 이름을 바꿔서 사용
     else if (fi < 0) { fi = F.length; F.push(AV_FOLDER); }
-    const no = c.imgs.filter(i => i.av).length + 1;
+    let no = 1; while (c.imgs.some(i => i.l === '초상화 ' + no)) no++;   // v1.7.4: 비어 있는 가장 작은 번호 (다시 채울 때 이름 겹침 방지)
     c.imgs.push({ l: '초상화 ' + no, src: '', data: d, a: 1, z: 100, x: 50, y: 0, f: fi, av: h });
   }
   update({ chars: true });
